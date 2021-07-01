@@ -3,6 +3,7 @@ use std::io::Cursor;
 use std::io::prelude::*;
 use byteorder::{LittleEndian, ReadBytesExt};
 
+/// https://cs.android.com/android-studio/platform/tools/base/+/mirror-goog-studio-main:apkparser/binary-resources/src/main/java/com/google/devrel/gmscore/tools/apk/arsc/Chunk.java
 #[allow(non_camel_case_types)]
 enum ChunkType {
     NULL = 0x0000,
@@ -28,6 +29,7 @@ pub struct Context {
     pub strings_pool: Vec<String>
 }
 
+/// https://cs.android.com/android-studio/platform/tools/base/+/mirror-goog-studio-main:apkparser/binary-resources/src/main/java/com/google/devrel/gmscore/tools/apk/arsc/XmlStartElementChunk.java
 fn read_xml_start_element_chunk(context: &mut Context, cursor: &mut Cursor<&Vec<u8>>, chunk_offset: u64, header_size: u64, chunk_size: u64) {
     #[cfg(debug_assertions)]
     println!("xml start element chunk, offset: {}", cursor.position());
@@ -85,6 +87,7 @@ fn read_xml_start_element_chunk(context: &mut Context, cursor: &mut Cursor<&Vec<
     cursor.set_position(chunk_offset + chunk_size as u64); 
 }
 
+/// https://cs.android.com/android-studio/platform/tools/base/+/mirror-goog-studio-main:apkparser/binary-resources/src/main/java/com/google/devrel/gmscore/tools/apk/arsc/StringPoolChunk.java
 fn read_string_pool_chunk(context: &mut Context, cursor: &mut Cursor<&Vec<u8>>, chunk_offset: u64, header_size: u64, chunk_size: u64) {
     #[cfg(debug_assertions)]
     println!("string pool chunk");
@@ -154,7 +157,7 @@ fn read_string_pool_chunk(context: &mut Context, cursor: &mut Cursor<&Vec<u8>>, 
     cursor.set_position(chunk_offset + chunk_size as u64); 
 }
 
-
+/// https://cs.android.com/android-studio/platform/tools/base/+/mirror-goog-studio-main:apkparser/binary-resources/src/main/java/com/google/devrel/gmscore/tools/apk/arsc/Chunk.java
 pub fn read_chunk(context: &mut Context, cursor: &mut Cursor<&Vec<u8>>) {
     let chunk_offset = cursor.position();
     let chunk_type = cursor.read_i16::<LittleEndian>().unwrap();
@@ -164,6 +167,8 @@ pub fn read_chunk(context: &mut Context, cursor: &mut Cursor<&Vec<u8>>) {
     println!("chunk_offset: {}, chunk_type: {}, header_size: {}, chunk_size: {}", chunk_offset, chunk_type, header_size, chunk_size);
 
     if chunk_type == ChunkType::XML as i16 {
+        // https://cs.android.com/android-studio/platform/tools/base/+/mirror-goog-studio-main:apkparser/binary-resources/src/main/java/com/google/devrel/gmscore/tools/apk/arsc/XmlChunk.java
+        // https://cs.android.com/android-studio/platform/tools/base/+/mirror-goog-studio-main:apkparser/binary-resources/src/main/java/com/google/devrel/gmscore/tools/apk/arsc/ChunkWithChunks.java
         #[cfg(debug_assertions)]
         println!("read xml chunk");
         while cursor.position() < chunk_offset + chunk_size as u64 {
