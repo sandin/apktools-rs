@@ -10,11 +10,14 @@ $ apktools packagename <apkfile>
 $ output: com.your.package.name
 ```
 
-Set `debuggable=true`:
+Get debuggable:
 ```
 $ apktools debuggable <apkfile>
-$ output: success
+$ output: false
 ```
+
+* `true`: debug apk
+* `false`: release apk
 
 # Build
 

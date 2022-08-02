@@ -45,10 +45,41 @@ fn main() {
         let mut cursor = Cursor::new(&buffer);
 
         let mut context = Context {
+            mode: 1,
             strings_pool: Vec::new() 
         };
         read_chunk(&mut context, &mut cursor);
     } else if let Some(opts) = matches.subcommand_matches("debuggable") {
+        let apkfile = opts.value_of("apkfile").expect("missing apkfile arg.");
+        let apkfile = std::path::Path::new(apkfile);
+        if !apkfile.exists() {
+            eprintln!("{} file is not exists!", apkfile.display());
+            process::exit(-1); 
+        }
+
+        let zipfile = std::fs::File::open(&apkfile).unwrap();
+        let mut archive = zip::ZipArchive::new(zipfile).unwrap();
+
+        let mut manifest_file = match archive.by_name("AndroidManifest.xml") {
+            Ok(file) => file,
+            Err(..) => {
+                eprintln!("Can not find AndroidManifest.xml in {}!", apkfile.display());
+                process::exit(-1); 
+            }
+        };
+
+        let mut buffer: Vec<u8> = Vec::new();
+        manifest_file.read_to_end(&mut buffer).unwrap();
+        let mut cursor = Cursor::new(&buffer);
+
+        let mut context = Context {
+            mode: 2,
+            strings_pool: Vec::new() 
+        };
+        read_chunk(&mut context, &mut cursor);
+
+
+        /*
         let apkfile = opts.value_of("apkfile").expect("missing apkfile arg.");
         let apkfile = std::path::Path::new(apkfile);
         if !apkfile.exists() {
@@ -72,5 +103,6 @@ fn main() {
             // TODO: change manifest
         }
         output_zip.finish().unwrap();
+        */
     }
 }

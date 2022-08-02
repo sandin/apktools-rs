@@ -26,6 +26,7 @@ const SORTED_FLAG : i32 = 1 << 8;
 const UTF8_FLAG: i32 = 1 << 8;
 
 pub struct Context {
+    pub mode: i32,
     pub strings_pool: Vec<String>
 }
 
@@ -45,19 +46,21 @@ fn read_xml_start_element_chunk(context: &mut Context, cursor: &mut Cursor<&Vec<
     let class_index = cursor.read_i16::<LittleEndian>().unwrap() as u64 & 0xFFFF - 1;
     let style_index = cursor.read_i16::<LittleEndian>().unwrap() as u64 & 0xFFFF - 1;
     #[cfg(debug_assertions)]
-    println!("start element: line_number: {}, comment: {}, namespace: {}, name: {}, attribute_start: {}, attribute_count: {}", 
-        line_number, comment, namespace, tag_name, attribute_start, attribute_count);
+    println!("start element: line_number: {}, comment: {}, namespace: {}, name: {}, attribute_start: {}, attribute_size: {}, attribute_count: {}", 
+        line_number, comment, namespace, tag_name, attribute_start, attribute_size, attribute_count);
 
     let offset = chunk_offset + header_size + attribute_start;
     cursor.set_position(offset);
     for i in 0..attribute_count {
         let namespace = cursor.read_i32::<LittleEndian>().unwrap();
         let name = cursor.read_i32::<LittleEndian>().unwrap();
-        let attr_name = context.strings_pool.get(name as usize).unwrap();
         let raw_value = cursor.read_i32::<LittleEndian>().unwrap();
+
+        let attr_name = context.strings_pool.get(name as usize).unwrap();
 
         // TODO: type_value
         // @see https://cs.android.com/android-studio/platform/tools/base/+/mirror-goog-studio-main:apkparser/binary-resources/src/main/java/com/google/devrel/gmscore/tools/apk/arsc/XmlAttribute.java
+        // @see https://cs.android.com/android-studio/platform/tools/base/+/mirror-goog-studio-main:apkparser/binary-resources/src/main/java/com/google/devrel/gmscore/tools/apk/arsc/BinaryResourceValue.java
         let type_value_size = cursor.read_i16::<LittleEndian>().unwrap() as u64 & 0xFFFF;
         let _ = cursor.read_i8().unwrap();
         let type_value_type = cursor.read_i8().unwrap();
@@ -66,22 +69,33 @@ fn read_xml_start_element_chunk(context: &mut Context, cursor: &mut Cursor<&Vec<
         if type_value_type == 0x03 { // string
             let value = context.strings_pool.get(raw_value as usize).unwrap();
             #[cfg(debug_assertions)]
-            println!("attribute: {}={}", name, value); 
+            println!("attribute: string {}({})={}", attr_name, name, value); 
 
-            if tag_name == "manifest" && attr_name == "package" {
+            if context.mode == 1 && tag_name == "manifest" && attr_name == "package" {
                 println!("{}", value);
-                #[cfg(not(debug_assertions))]
                 process::exit(-1);  // TODO: just print the package name for now
             }
-
         } else if type_value_type == 0x10 { // dec
             #[cfg(debug_assertions)]
-            println!("attribute: {}={}", name, type_value_data); 
+            println!("attribute: dec {}({})={}", attr_name, name, type_value_data); 
+        } else if type_value_type == 0x12 { // INT_BOOLEAN
+            #[cfg(debug_assertions)]
+            println!("attribute: bool {}({})={}", attr_name, name, type_value_data); 
+            if context.mode == 2 && tag_name == "application" && attr_name == "debuggable" {
+                println!("{}", if type_value_data != 0 { "true" } else { "false" } ); // 0=false, -1=true
+                process::exit(-1);  // TODO: just print the debuggable for now
+            }
         } else {
             #[cfg(debug_assertions)]
-            println!("attribute: {}={}", name, raw_value); 
+            println!("attribute: {} {}({})={}", type_value_type, attr_name, name, type_value_data); 
         }
-        //println!("type_value_size: {}, type_value_type: {}, type_value_data: {}", type_value_size, type_value_type, type_value_data); 
+        //#[cfg(debug_assertions)]
+        //println!("type_value_size: {}, type_value_type: {}, type_value_data: {}, raw_value: {}", type_value_size, type_value_type, type_value_data, raw_value); 
+    }
+
+    if context.mode == 2 && tag_name == "application" {
+        println!("{}", "false"); // not found debuggable attr in application
+        process::exit(-1);  // TODO: just print the debuggable for now
     }
 
     cursor.set_position(chunk_offset + chunk_size as u64); 
