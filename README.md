@@ -7,15 +7,16 @@ Tools for android apk file.
 Get package name:
 ```
 $ apktools packagename <apkfile>
-$ output: com.your.package.name
+$ com.your.package.name
 ```
 
 Get debuggable:
 ```
 $ apktools debuggable <apkfile>
-$ output: false
+$ false
 ```
 
+output:
 * `true`: debug apk
 * `false`: release apk
 
