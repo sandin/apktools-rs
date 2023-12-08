@@ -83,7 +83,7 @@ fn read_xml_start_element_chunk(context: &mut Context, cursor: &mut Cursor<&Vec<
             println!("attribute: bool {}({})={}", attr_name, name, type_value_data); 
             if context.mode == 2 && tag_name == "application" && attr_name == "debuggable" {
                 println!("{}", if type_value_data != 0 { "true" } else { "false" } ); // 0=false, -1=true
-                process::exit(-1);  // TODO: just print the debuggable for now
+                process::exit(0);  // TODO: just print the debuggable for now
             }
         } else {
             #[cfg(debug_assertions)]
